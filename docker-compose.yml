@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  snppit:
+    build: 
+      context: .
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    image: snppit:latest
+    container_name: snppit-container
+    volumes:
+      # Mount current directory to /data in container
+      - .:/data
+    working_dir: /data
+    # Override default entrypoint to allow flexible usage
+    entrypoint: ["snppit"]
+    # Default to showing help if no command provided
+    command: ["--help"]
+    
+  # Service for interactive analysis
+  snppit-interactive:
+    build: 
+      context: .
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    image: snppit:latest
+    container_name: snppit-interactive
+    volumes:
+      - .:/data
+    working_dir: /data
+    entrypoint: ["/bin/bash"]
+    stdin_open: true
+    tty: true
+    
+  # Service for running tests
+  snppit-test:
+    build: 
+      context: .
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    image: snppit:latest
+    container_name: snppit-test
+    volumes:
+      - ./test:/data
+      - ./snppit-Linux:/usr/local/bin/snppit-host
+    working_dir: /data
+    entrypoint: ["sh"]
+    command: ["-c", "cd input7 && snppit -f datafile.txt $(cat pars)"]

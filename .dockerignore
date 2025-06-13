@@ -1,0 +1,40 @@
+# Exclude compiled binaries
+snppit-*
+snppit.exe
+*.exe
+
+# Exclude git and development files
+.git
+.gitignore
+*.md
+README.md
+CLAUDE.md
+
+# Exclude documentation and examples
+doc/
+docs/
+ExampleData/
+vignettes/
+
+# Exclude test directories and outputs
+test/
+output-*/
+*output*.txt
+
+# Exclude IDE and OS files
+.DS_Store
+.vscode/
+.idea/
+Thumbs.db
+
+# Exclude R project files
+*.Rproj
+.Rproj.user/
+
+# Exclude temporary files
+*.tmp
+*.temp
+*~
+
+# Exclude macOS specific directory
+OSX/
