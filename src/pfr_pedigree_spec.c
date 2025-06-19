@@ -84,7 +84,7 @@ FB_Vars *CreateCompleteFB_Vars(
 	/* set the smax string */
 	sprintf(smax_string," --s-max ");
 	for(i=0;i<smax_d;i++) {
-		sprintf(smax_string,"%s %d ",smax_string,smax[i]);
+		sprintf(smax_string + strlen(smax_string)," %d ",smax[i]);
 	}
 	
 	
