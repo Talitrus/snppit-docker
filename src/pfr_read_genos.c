@@ -332,7 +332,7 @@ int ReturnGeno(int i,int **AlleNamesRaw, int *NumAlleRaw, char *A, char *B, char
 	}
 	else if((strcmp(A,Missing)==0 && strcmp(B,Missing)!=0)  || 
 			(strcmp(A,Missing)!=0 && strcmp(B,Missing)==0)) {
-		fprintf(stderr,"Warning: Locus %d at individual %s has only one missing allele. (A= \"%s\"  B= \"%s\".  Coerced both to missing.  No need to abort.\n",i,gCurrentIndivID,A,B);
+		fprintf(stderr,"Warning: Locus %d at individual %s has only one missing allele (A=\"%s\" B=\"%s\"). Coerced both to missing.\n",i,gCurrentIndivID,A,B);
 	}
 	else {
 		a[0] = atoi(A);
@@ -354,7 +354,10 @@ int ReturnGeno(int i,int **AlleNamesRaw, int *NumAlleRaw, char *A, char *B, char
 		if(b[0]>1 || b[1]>1)  {
 			fprintf(stderr,"Error at locus %d.  We've detected more than 2 alleles: ",i);
 			for(l=0;l<NumAlleRaw[i];l++) fprintf(stderr,"%d ",AlleNamesRaw[i][l]);
-			fprintf(stderr,"  Last read individual = %s  ...  Exiting.\n", gCurrentIndivID);
+			fprintf(stderr,"\n  Individual ID = %s\n", gCurrentIndivID);
+			fprintf(stderr,"  SNPPIT only supports bi-allelic SNP markers (maximum 2 alleles per locus).\n");
+			fprintf(stderr,"  Please check your data format - ensure all alleles are integers and no locus has >2 distinct values.\n");
+			fprintf(stderr,"  Exiting.\n");
 			exit(1);
 		}
 	}
@@ -508,7 +511,7 @@ pfr_geno_data *FirstPassThroughData(const char *FileName)
 			/* read the ID */
 			fscanf(in," %s",tempIndivID);
 			sprintf(gCurrentIndivID,"%s",tempIndivID);
-			
+				
 			#ifdef VERBOSE_FIRST_PASS_THROUGH_DATA
 				printf("\nREADING_FIRST_PASS_PARENTS ");
 				printf("%s ",tempIndivID);
@@ -567,7 +570,7 @@ pfr_geno_data *FirstPassThroughData(const char *FileName)
 				
 				/* now read the loci */
 				for(i=0;i<ret->NumLoci;i++) {  int boing;
-					fscanf(in," %s %s ",tempstr,tempstr2);
+					fscanf(in," %s %s",tempstr,tempstr2);
 					#ifdef VERBOSE_FIRST_PASS_THROUGH_DATA
 						printf(" %s %s ",tempstr,tempstr2);
 					#endif
@@ -587,13 +590,15 @@ pfr_geno_data *FirstPassThroughData(const char *FileName)
 						printf(" =[%d] ",boing);
 					#endif
 				}
-				
+				/* ensure we're at the start of the next line by consuming to end of line */
+				{ int c; while((c = fgetc(in)) != '\n' && c != EOF); }
 			}
 		}
 		else if(Regime==OFFSPRING) {
 			/* read the ID */
 			fscanf(in," %s",tempIndivID);
-			
+			sprintf(gCurrentIndivID,"%s",tempIndivID);
+				
 			#ifdef VERBOSE_FIRST_PASS_THROUGH_DATA
 				printf("\nREADING_FIRST_PASS_OFFSPRING ");
 				printf("%s ",tempIndivID);
@@ -641,7 +646,7 @@ pfr_geno_data *FirstPassThroughData(const char *FileName)
 				
 				/* now read the loci */
 				for(i=0;i<ret->NumLoci;i++) { int boing;
-					fscanf(in," %s %s ",tempstr,tempstr2);
+					fscanf(in," %s %s",tempstr,tempstr2);
 					#ifdef VERBOSE_FIRST_PASS_THROUGH_DATA
 						printf(" %s %s ",tempstr,tempstr2);
 					#endif
@@ -662,7 +667,8 @@ pfr_geno_data *FirstPassThroughData(const char *FileName)
 						printf(" =[%d] ",boing);
 					#endif
 				}
-				
+				/* ensure we're at the start of the next line by consuming to end of line */
+				{ int c; while((c = fgetc(in)) != '\n' && c != EOF); }
 			}
 			
 		}
@@ -1125,9 +1131,10 @@ void CollectDataOnSecondPass(pfr_geno_data *ret, const char *FileName)
 		}
 		
 
-		for(j=0;j<ret->TotRowsInPops[i];j++)  {
+		for(j=0;j<ret->TotInPops[i];j++)  {
 			pfp=NULL;
 			fscanf(in," %s",tempIndivID);
+			sprintf(gCurrentIndivID,"%s",tempIndivID);
 			#ifdef VERBOSE_SECOND_PASS_THROUGH_DATA
 				printf("SECOND_PASS:  %s   ",tempIndivID);
 			#endif
@@ -1148,7 +1155,7 @@ void CollectDataOnSecondPass(pfr_geno_data *ret, const char *FileName)
 			}
 			
 			for(k=0;k<ret->NumLoci;k++)  { char boing;
-				fscanf(in," %s %s ",tempstr,tempstr2);
+				fscanf(in," %s %s",tempstr,tempstr2);
 				boing = (char)ReturnGeno(k,ret->AlleNamesRaw, ret->NumAlleRaw, tempstr, tempstr2, ret->MissingAlleleString);
 				#ifdef VERBOSE_SECOND_PASS_THROUGH_DATA
 					printf(" %s %s ",tempstr,tempstr2);
@@ -1157,6 +1164,8 @@ void CollectDataOnSecondPass(pfr_geno_data *ret, const char *FileName)
 				pfp->geno[pfp->NumGenos][k] = boing;
 				pfp->NumMissingLoci[pfp->NumGenos] += (boing==3);  /* if boing is 3 it means the locus is missing */
 			}
+			/* ensure we're at the start of the next line by consuming to end of line */
+			{ int c; while((c = fgetc(in)) != '\n' && c != EOF); }
 			#ifdef VERBOSE_SECOND_PASS_THROUGH_DATA
 				printf("NumMissingLoci= %d ",pfp->NumMissingLoci[pfp->NumGenos]);
 				printf("\n");
@@ -1208,8 +1217,9 @@ void CollectDataOnSecondPass(pfr_geno_data *ret, const char *FileName)
 		
 		/* I need to put in a function here that processes these possible parent pops */
 		
-		for(j=0;j<ret->TotRowsInColls[i];j++)  {
+		for(j=0;j<ret->NumInOffColls[i];j++)  {
 			fscanf(in," %s",tempIndivID);
+			sprintf(gCurrentIndivID,"%s",tempIndivID);
 			#ifdef VERBOSE_SECOND_PASS_THROUGH_DATA
 				printf("SECOND_PASS:  %s   ",tempIndivID);
 			#endif
@@ -1243,7 +1253,7 @@ void CollectDataOnSecondPass(pfr_geno_data *ret, const char *FileName)
 			}
 			
 			for(k=0;k<ret->NumLoci;k++)  { char boing;
-				fscanf(in," %s %s ",tempstr,tempstr2);
+				fscanf(in," %s %s",tempstr,tempstr2);
 				boing = (char)ReturnGeno(k,ret->AlleNamesRaw, ret->NumAlleRaw, tempstr, tempstr2, ret->MissingAlleleString);
 				
 				#ifdef VERBOSE_SECOND_PASS_THROUGH_DATA 
@@ -1254,6 +1264,8 @@ void CollectDataOnSecondPass(pfr_geno_data *ret, const char *FileName)
 				pfo->geno[pfo->NumGenos][k] = boing;
 				pfo->NumMissingLoci[pfo->NumGenos] += (boing==3);  /* if boing is 3 it means the locus is missing */
 			}
+			/* ensure we're at the start of the next line by consuming to end of line */
+			{ int c; while((c = fgetc(in)) != '\n' && c != EOF); }
 			#ifdef VERBOSE_SECOND_PASS_THROUGH_DATA
 				printf("NumMissingLoci= %d ",pfo->NumMissingLoci[pfo->NumGenos]);
 				printf("\n");
