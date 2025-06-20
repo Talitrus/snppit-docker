@@ -4,7 +4,7 @@ FROM --platform=$BUILDPLATFORM ubuntu:24.04
 # Set metadata
 LABEL maintainer="Bryan Nguyen"
 LABEL description="SNPPIT - SNP Program for Intergenerational Tagging"
-LABEL version="0.1"
+LABEL version="0.3"
 
 # Install build dependencies
 RUN apt-get update && \
